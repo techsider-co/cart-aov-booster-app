@@ -1,8 +1,10 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteError } from "react-router";
+
+import { RootErrorPage } from "./components/RootErrorPage";
 
 export default function App() {
   return (
-    <html lang="en">
+    <html lang="tr">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -21,4 +23,9 @@ export default function App() {
       </body>
     </html>
   );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return <RootErrorPage error={error} />;
 }
