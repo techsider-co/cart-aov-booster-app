@@ -32,3 +32,26 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
+
+model ShippingBarWidget {
+  id              String  @id @default(uuid())
+  shop            String  @unique
+  isActive        Boolean @default(false)
+  goalAmount      Int     @default(500)
+  currency        String  @default("TRY")
+  initialMessage  String  @default("Kargo bedava fırsatını yakala!")
+  progressMessage String  @default("Kargoya sadece [amount] kaldı!")
+  successMessage  String  @default("Tebrikler, Kargo Bedava!")
+  barColor        String  @default("#000000")
+  progressColor   String  @default("#22c55e")
+}
+
+model StickyCartWidget {
+  id            String  @id @default(uuid())
+  shop          String  @unique
+  isActive      Boolean @default(false)
+  position      String  @default("bottom")
+  buttonColor   String  @default("#000000")
+  buttonText    String  @default("Sepete Ekle")
+  hideOnDesktop Boolean @default(false)
+}
