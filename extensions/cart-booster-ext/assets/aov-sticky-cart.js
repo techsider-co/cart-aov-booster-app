@@ -11,81 +11,125 @@
 
   if (!config.isActive) return;
 
-  var addButton = root.querySelector('.aov-sticky-cart__button');
-  var scrollThreshold = 300;
-  var ticking = false;
-  var addToCartControl = null;
+  var stickyButton = root.querySelector('.aov-sticky-cart__button');
+  var originalForm = null;
+  var originalButton = null;
+  var intersectionObserver = null;
+  var disabledObserver = null;
 
-  function findAddToCartControl() {
-    var productForm = document.querySelector('form[action*="/cart/add"]');
-    if (!productForm) return null;
+  function findAddToCartTargets() {
+    var forms = document.querySelectorAll('form[action^="/cart/add"], form[action*="/cart/add"]');
 
-    return (
-      productForm.querySelector('[name="add"]') ||
-      productForm.querySelector('button[type="submit"]') ||
-      productForm.querySelector('[type="submit"]')
-    );
+    for (var i = 0; i < forms.length; i++) {
+      var form = forms[i];
+      var button =
+        form.querySelector('[name="add"]') ||
+        form.querySelector('button[type="submit"]') ||
+        form.querySelector('input[type="submit"]');
+
+      if (button) {
+        return { form: form, button: button };
+      }
+    }
+
+    if (forms.length > 0) {
+      return { form: forms[0], button: null };
+    }
+
+    return { form: null, button: null };
   }
 
-  function isInViewport(element) {
-    var rect = element.getBoundingClientRect();
-    return rect.top < window.innerHeight && rect.bottom > 0;
+  function setBarVisible(visible) {
+    root.classList.toggle('is-visible', visible);
+    root.setAttribute('aria-hidden', visible ? 'false' : 'true');
   }
 
-  function shouldShowBar() {
-    var scrolledPastThreshold = window.scrollY > scrollThreshold;
-    var originalHidden = addToCartControl ? !isInViewport(addToCartControl) : scrolledPastThreshold;
-    return scrolledPastThreshold || originalHidden;
+  function syncDisabledState() {
+    if (!stickyButton || !originalButton) return;
+    stickyButton.disabled = originalButton.disabled;
   }
 
-  function updateVisibility() {
-    root.classList.toggle('is-visible', shouldShowBar());
-  }
+  function triggerOriginalAddToCart(event) {
+    if (event) {
+      event.preventDefault();
+    }
 
-  function onScroll() {
-    if (ticking) return;
-    ticking = true;
-
-    window.requestAnimationFrame(function () {
-      updateVisibility();
-      ticking = false;
-    });
-  }
-
-  function submitProductForm() {
-    var productForm = document.querySelector('form[action*="/cart/add"]');
-    if (!productForm) return;
-
-    if (typeof productForm.requestSubmit === 'function') {
-      productForm.requestSubmit();
+    if (!originalButton || originalButton.disabled) {
       return;
     }
 
-    productForm.submit();
+    originalButton.click();
   }
 
-  addToCartControl = findAddToCartControl();
+  function observeAddToCartVisibility(target) {
+    if (!target || !('IntersectionObserver' in window)) {
+      return;
+    }
 
-  if (addButton) {
-    addButton.addEventListener('click', function (event) {
-      event.preventDefault();
-      submitProductForm();
+    if (intersectionObserver) {
+      intersectionObserver.disconnect();
+    }
+
+    intersectionObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          setBarVisible(!entry.isIntersecting);
+          syncDisabledState();
+        });
+      },
+      {
+        root: null,
+        threshold: 0,
+      }
+    );
+
+    intersectionObserver.observe(target);
+    syncDisabledState();
+  }
+
+  function observeOriginalButtonDisabled() {
+    if (!originalButton || !('MutationObserver' in window)) {
+      return;
+    }
+
+    if (disabledObserver) {
+      disabledObserver.disconnect();
+    }
+
+    disabledObserver = new MutationObserver(syncDisabledState);
+    disabledObserver.observe(originalButton, {
+      attributes: true,
+      attributeFilter: ['disabled', 'aria-disabled', 'class'],
     });
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
+  function init() {
+    var targets = findAddToCartTargets();
+    originalForm = targets.form;
+    originalButton = targets.button;
 
-  if (addToCartControl && 'IntersectionObserver' in window) {
-    var observer = new IntersectionObserver(
-      function () {
-        updateVisibility();
-      },
-      { root: null, threshold: 0 }
-    );
+    if (!originalForm && !originalButton) {
+      return false;
+    }
 
-    observer.observe(addToCartControl);
+    var observeTarget = originalButton || originalForm;
+
+    if (stickyButton) {
+      stickyButton.addEventListener('click', triggerOriginalAddToCart);
+    }
+
+    observeAddToCartVisibility(observeTarget);
+
+    if (originalButton) {
+      observeOriginalButtonDisabled();
+    }
+
+    return true;
   }
 
-  updateVisibility();
+  if (!init()) {
+    window.setTimeout(function () {
+      init();
+    }, 500);
+  }
 })();

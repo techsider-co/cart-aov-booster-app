@@ -2,7 +2,6 @@
   {% assign config = shop.metafields.aov_booster.sticky_cart_config.value %}
 
   {% if config and config.isActive %}
-    {% assign current_variant = product.selected_or_first_available_variant %}
     {% assign position_class = 'aov-sticky-cart--bottom' %}
     {% if config.position == 'top' %}
       {% assign position_class = 'aov-sticky-cart--top' %}
@@ -13,6 +12,16 @@
       {% assign mobile_only_class = 'aov-sticky-cart--mobile-only' %}
     {% endif %}
 
+    {% if config.hideOnDesktop %}
+      <style>
+        @media (min-width: 768px) {
+          #aov-sticky-cart.aov-sticky-cart--mobile-only {
+            display: none !important;
+          }
+        }
+      </style>
+    {% endif %}
+
     <div
       id="aov-sticky-cart"
       class="aov-sticky-cart {{ position_class }} {{ mobile_only_class }}"
@@ -20,6 +29,7 @@
       data-config="{{ config | json | escape }}"
       role="complementary"
       aria-label="Yapışkan sepete ekle"
+      aria-hidden="true"
     >
       {% if product.featured_image %}
         <div class="aov-sticky-cart__media">
@@ -33,16 +43,10 @@
 
       <div class="aov-sticky-cart__info">
         <p class="aov-sticky-cart__title">{{ product.title | escape }}</p>
-        <p class="aov-sticky-cart__price">{{ current_variant.price | money }}</p>
+        <p class="aov-sticky-cart__price">{{ product.price | money }}</p>
       </div>
 
-      <button
-        type="button"
-        class="aov-sticky-cart__button"
-        {% unless current_variant.available %}
-          disabled
-        {% endunless %}
-      >
+      <button type="button" class="aov-sticky-cart__button">
         {{ config.buttonText | default: 'Sepete Ekle' | escape }}
       </button>
     </div>
@@ -52,7 +56,10 @@
 {% schema %}
 {
   "name": "t:blocks.sticky_cart.name",
-  "target": "body",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
   "javascript": "aov-sticky-cart.js",
   "stylesheet": "aov-sticky-cart.css",
   "settings": []

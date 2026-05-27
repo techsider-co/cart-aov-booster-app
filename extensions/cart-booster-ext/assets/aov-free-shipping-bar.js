@@ -14,8 +14,11 @@
   var messageEl = root.querySelector('.aov-shipping-bar__message');
   var progressEl = root.querySelector('.aov-shipping-bar__progress');
   var goalCents = Number(config.goalAmount || 0) * 100;
-  var pending = false;
   var cartEndpoints = ['/cart/add', '/cart/change', '/cart/update', '/cart/clear'];
+  var refreshDelayMs = 500;
+  var refreshTimer = null;
+  var cartFetchInflight = false;
+  var cartFetchQueued = false;
 
   if (!goalCents || !messageEl || !progressEl) return;
 
@@ -53,35 +56,42 @@
   function renderBar(totalPrice) {
     var total = Number(totalPrice) || 0;
     var percent = Math.min(100, Math.round((total / goalCents) * 100));
+    var nextMessage = '';
+    var nextWidth = '0%';
 
     if (total >= goalCents) {
-      messageEl.textContent = config.successMessage || 'Tebrikler, Kargo Bedava!';
-      progressEl.style.width = '100%';
-      return;
+      nextMessage = config.successMessage || 'Tebrikler, Kargo Bedava!';
+      nextWidth = '100%';
+    } else if (total <= 0) {
+      nextMessage = config.initialMessage || '';
+      nextWidth = '0%';
+    } else {
+      var remaining = goalCents - total;
+      nextMessage = replaceAmount(
+        config.progressMessage || 'Kargoya sadece [amount] kaldı!',
+        formatMoney(remaining)
+      );
+      nextWidth = percent + '%';
     }
 
-    if (total <= 0) {
-      messageEl.textContent = config.initialMessage || '';
-      progressEl.style.width = '0%';
-      return;
-    }
-
-    var remaining = goalCents - total;
-    var amountLabel = formatMoney(remaining);
-    messageEl.textContent = replaceAmount(
-      config.progressMessage || 'Kargoya sadece [amount] kaldı!',
-      amountLabel
-    );
-    progressEl.style.width = percent + '%';
+    window.requestAnimationFrame(function () {
+      messageEl.textContent = nextMessage;
+      progressEl.style.width = nextWidth;
+    });
   }
 
   function refreshCart() {
-    if (pending) return;
-    pending = true;
+    if (cartFetchInflight) {
+      cartFetchQueued = true;
+      return;
+    }
+
+    cartFetchInflight = true;
 
     fetch('/cart.js', {
       credentials: 'same-origin',
       headers: { Accept: 'application/json' },
+      cache: 'no-store',
     })
       .then(function (response) {
         if (!response.ok) throw new Error('Cart fetch failed');
@@ -92,80 +102,138 @@
       })
       .catch(function () {})
       .finally(function () {
-        pending = false;
+        cartFetchInflight = false;
+
+        if (cartFetchQueued) {
+          cartFetchQueued = false;
+          refreshCart();
+        }
       });
   }
 
-  function shouldWatchRequest(input) {
-    var url = '';
-
-    if (typeof input === 'string') {
-      url = input;
-    } else if (input && typeof input.url === 'string') {
-      url = input.url;
+  function scheduleRefresh() {
+    if (refreshTimer) {
+      window.clearTimeout(refreshTimer);
     }
 
-    if (!url) return false;
+    refreshTimer = window.setTimeout(function () {
+      refreshTimer = null;
+      refreshCart();
+    }, refreshDelayMs);
+  }
+
+  function resolveRequestUrl(input) {
+    if (typeof input === 'string') {
+      return input;
+    }
+
+    if (input instanceof Request) {
+      return input.url;
+    }
+
+    if (input && typeof input.url === 'string') {
+      return input.url;
+    }
+
+    return '';
+  }
+
+  function normalizePathname(url) {
+    if (!url) return '';
+
+    try {
+      return new URL(url, window.location.origin).pathname;
+    } catch (error) {
+      return url.split('?')[0];
+    }
+  }
+
+  function isCartMutationRequest(url) {
+    var pathname = normalizePathname(url);
+
+    if (!pathname || pathname.indexOf('/cart.js') !== -1) {
+      return false;
+    }
 
     return cartEndpoints.some(function (endpoint) {
-      return url.indexOf(endpoint) !== -1;
+      return pathname.indexOf(endpoint) !== -1;
     });
   }
 
+  function isSuccessfulStatus(status) {
+    return status >= 200 && status < 300;
+  }
+
+  function onCartMutationSuccess() {
+    scheduleRefresh();
+  }
+
   function patchFetch() {
-    if (!window.fetch || window.fetch.__aovPatched) return;
+    if (!window.fetch || window.fetch.__aovCartObserverPatched) return;
 
     var nativeFetch = window.fetch.bind(window);
 
     window.fetch = function (input, init) {
-      var watch = shouldWatchRequest(input);
+      var requestUrl = resolveRequestUrl(input);
+      var watch = isCartMutationRequest(requestUrl);
 
       return nativeFetch(input, init).then(function (response) {
-        if (watch) {
-          window.setTimeout(refreshCart, 0);
+        if (watch && response.ok) {
+          onCartMutationSuccess();
         }
+
         return response;
       });
     };
 
-    window.fetch.__aovPatched = true;
+    window.fetch.__aovCartObserverPatched = true;
   }
 
   function patchXHR() {
-    if (!window.XMLHttpRequest || window.XMLHttpRequest.__aovPatched) return;
+    if (!window.XMLHttpRequest || window.XMLHttpRequest.__aovCartObserverPatched) {
+      return;
+    }
 
     var nativeOpen = XMLHttpRequest.prototype.open;
+    var nativeSend = XMLHttpRequest.prototype.send;
 
     XMLHttpRequest.prototype.open = function (method, url) {
-      this.__aovWatchCart = typeof url === 'string' && url.indexOf('/cart') !== -1;
+      this.__aovCartMutationUrl =
+        typeof url === 'string' ? url : url ? String(url) : '';
       return nativeOpen.apply(this, arguments);
     };
 
-    var nativeSend = XMLHttpRequest.prototype.send;
-
     XMLHttpRequest.prototype.send = function () {
-      if (this.__aovWatchCart) {
-        this.addEventListener('load', function () {
-          window.setTimeout(refreshCart, 0);
+      var xhr = this;
+      var watch = isCartMutationRequest(xhr.__aovCartMutationUrl);
+
+      if (watch) {
+        xhr.addEventListener('load', function () {
+          if (isSuccessfulStatus(xhr.status)) {
+            onCartMutationSuccess();
+          }
         });
       }
+
       return nativeSend.apply(this, arguments);
     };
 
-    XMLHttpRequest.__aovPatched = true;
+    window.XMLHttpRequest.__aovCartObserverPatched = true;
   }
 
-  document.addEventListener('aov:cart:changed', refreshCart);
-  document.addEventListener('cart:updated', refreshCart);
-  document.addEventListener('cart:refresh', refreshCart);
+  document.addEventListener('aov:cart:changed', scheduleRefresh);
+  document.addEventListener('cart:updated', scheduleRefresh);
+  document.addEventListener('cart:refresh', scheduleRefresh);
 
   document.addEventListener('submit', function (event) {
     var form = event.target;
 
     if (!(form instanceof HTMLFormElement)) return;
-    if (!form.action || form.action.indexOf('/cart/add') === -1) return;
 
-    window.setTimeout(refreshCart, 300);
+    var action = form.getAttribute('action') || form.action || '';
+    if (action.indexOf('/cart/add') === -1) return;
+
+    window.setTimeout(scheduleRefresh, refreshDelayMs);
   });
 
   patchFetch();
