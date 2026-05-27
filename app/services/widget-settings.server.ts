@@ -27,3 +27,13 @@ export async function getOrCreateStickyCartWidget(shop: string) {
 export function parseBooleanField(value: FormDataEntryValue | null): boolean {
   return value === "true" || value === "on" || value === "1";
 }
+
+/** Reads checkbox/switch values when a hidden "false" field precedes "true". */
+export function parseBooleanFromFormData(
+  formData: FormData,
+  field: string,
+): boolean {
+  return formData
+    .getAll(field)
+    .some((value) => parseBooleanField(value));
+}
