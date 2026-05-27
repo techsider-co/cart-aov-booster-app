@@ -55,3 +55,11 @@ model StickyCartWidget {
   buttonText    String  @default("Sepete Ekle")
   hideOnDesktop Boolean @default(false)
 }
+
+/// Dev-bypass Pro subscription (shop-scoped; survives embedded iframe cookie limits)
+model ShopProSubscription {
+  shop      String   @id
+  plan      String
+  isTest    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
