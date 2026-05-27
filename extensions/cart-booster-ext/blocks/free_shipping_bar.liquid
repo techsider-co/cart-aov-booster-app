@@ -1,0 +1,28 @@
+{% assign config = shop.metafields.aov_booster.shipping_bar_config.value %}
+
+{% if config and config.isActive %}
+  <div
+    id="aov-shipping-bar"
+    class="aov-shipping-bar"
+    style="--aov-bar-color: {{ config.barColor | default: '#000000' }}; --aov-progress-color: {{ config.progressColor | default: '#22c55e' }};"
+    data-config="{{ config | json | escape }}"
+    role="region"
+    aria-live="polite"
+    aria-label="Ücretsiz kargo durumu"
+  >
+    <p class="aov-shipping-bar__message"></p>
+    <div class="aov-shipping-bar__track" aria-hidden="true">
+      <div class="aov-shipping-bar__progress"></div>
+    </div>
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:blocks.free_shipping_bar.name",
+  "target": "body",
+  "javascript": "aov-free-shipping-bar.js",
+  "stylesheet": "aov-free-shipping-bar.css",
+  "settings": []
+}
+{% endschema %}

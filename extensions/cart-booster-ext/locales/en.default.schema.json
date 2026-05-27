@@ -1,0 +1,10 @@
+{
+  "blocks": {
+    "free_shipping_bar": {
+      "name": "Free Shipping Bar"
+    },
+    "sticky_cart": {
+      "name": "Sticky Add-to-Cart"
+    }
+  }
+}
