@@ -1,5 +1,5 @@
 {% if request.page_type == 'product' %}
-  {% assign config = shop.metafields.aov_booster.sticky_cart_config.value %}
+  {% assign config = app.metafields.aov_booster.sticky_cart_config.value %}
 
   {% if config and config.isActive %}
     {% assign position_class = 'aov-sticky-cart--bottom' %}
