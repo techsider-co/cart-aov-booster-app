@@ -49,6 +49,19 @@
     stickyButton.disabled = originalButton.disabled;
   }
 
+  function injectAovBoosterAttribute() {
+    if (!originalForm) return;
+
+    var existingInput = originalForm.querySelector('input[name="attributes[_aov_booster]"]');
+    if (existingInput) return;
+
+    var hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'attributes[_aov_booster]';
+    hiddenInput.value = 'true';
+    originalForm.appendChild(hiddenInput);
+  }
+
   function triggerOriginalAddToCart(event) {
     if (event) {
       event.preventDefault();
@@ -58,6 +71,7 @@
       return;
     }
 
+    injectAovBoosterAttribute();
     originalButton.click();
   }
 
