@@ -1,0 +1,60 @@
+{% if request.page_type == 'product' %}
+  {% assign config = shop.metafields.aov_booster.sticky_cart_config.value %}
+
+  {% if config and config.isActive %}
+    {% assign current_variant = product.selected_or_first_available_variant %}
+    {% assign position_class = 'aov-sticky-cart--bottom' %}
+    {% if config.position == 'top' %}
+      {% assign position_class = 'aov-sticky-cart--top' %}
+    {% endif %}
+
+    {% assign mobile_only_class = '' %}
+    {% if config.hideOnDesktop %}
+      {% assign mobile_only_class = 'aov-sticky-cart--mobile-only' %}
+    {% endif %}
+
+    <div
+      id="aov-sticky-cart"
+      class="aov-sticky-cart {{ position_class }} {{ mobile_only_class }}"
+      style="--aov-btn-color: {{ config.buttonColor | default: '#000000' }};"
+      data-config="{{ config | json | escape }}"
+      role="complementary"
+      aria-label="Yapışkan sepete ekle"
+    >
+      {% if product.featured_image %}
+        <div class="aov-sticky-cart__media">
+          {{
+            product.featured_image
+            | image_url: width: 120
+            | image_tag: alt: product.title, loading: 'lazy', widths: '48, 96, 120'
+          }}
+        </div>
+      {% endif %}
+
+      <div class="aov-sticky-cart__info">
+        <p class="aov-sticky-cart__title">{{ product.title | escape }}</p>
+        <p class="aov-sticky-cart__price">{{ current_variant.price | money }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="aov-sticky-cart__button"
+        {% unless current_variant.available %}
+          disabled
+        {% endunless %}
+      >
+        {{ config.buttonText | default: 'Sepete Ekle' | escape }}
+      </button>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:blocks.sticky_cart.name",
+  "target": "body",
+  "javascript": "aov-sticky-cart.js",
+  "stylesheet": "aov-sticky-cart.css",
+  "settings": []
+}
+{% endschema %}
