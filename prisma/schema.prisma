@@ -63,3 +63,13 @@ model ShopProSubscription {
   isTest    Boolean  @default(true)
   updatedAt DateTime @updatedAt
 }
+
+/// ROI Analytics - tracks revenue influenced by AOV Booster widgets
+model ShopAnalytics {
+  id               String   @id @default(uuid())
+  shop             String   @unique
+  totalRoi         Float    @default(0)
+  ordersInfluenced Int      @default(0)
+  currency         String   @default("TRY")
+  updatedAt        DateTime @updatedAt
+}
