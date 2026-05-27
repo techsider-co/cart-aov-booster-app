@@ -8,11 +8,28 @@ import {
   buildAppEmbedDeepLinkUrl,
   getCartBoosterThemeSetupStatus,
 } from "../services/theme-check.server";
+import { syncInfluencedOrdersFromAdmin } from "../services/roi-analytics.server";
 import { authenticate } from "../shopify.server";
+import db from "../db.server";
 
 type AppOutletContext = {
   isPro: boolean;
 };
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  TRY: "₺",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
+
+function formatCurrency(amount: number, currency: string): string {
+  const symbol = CURRENCY_SYMBOLS[currency] || currency + " ";
+  return `${symbol}${amount.toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -28,10 +45,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     "product",
   );
 
+  await syncInfluencedOrdersFromAdmin(session.shop, admin);
+
+  const analytics = await db.shopAnalytics.findUnique({
+    where: { shop: session.shop },
+  });
+
+  const roiData = {
+    totalRoi: analytics?.totalRoi ?? 0,
+    ordersInfluenced: analytics?.ordersInfluenced ?? 0,
+    currency: analytics?.currency ?? "TRY",
+  };
+
   return {
     themeSetup,
     shippingBarEmbedDeepLinkUrl,
     stickyCartBlockDeepLinkUrl,
+    roiData,
   };
 };
 
@@ -40,11 +70,45 @@ export default function Dashboard() {
     themeSetup,
     shippingBarEmbedDeepLinkUrl,
     stickyCartBlockDeepLinkUrl,
+    roiData,
   } = useLoaderData<typeof loader>();
   const { isPro } = useOutletContext<AppOutletContext>();
 
+  const formattedRoi = formatCurrency(roiData.totalRoi, roiData.currency);
+
   return (
     <s-page heading="Cart &amp; AOV Booster">
+      <s-section>
+        <s-box
+          background="success-subdued"
+          borderRadius="large"
+          padding="large"
+        >
+          <s-stack direction="block" gap="base" alignItems="center">
+            <s-stack direction="inline" gap="small" alignItems="center">
+              <s-icon type="chart-line" tone="success" />
+              <s-text type="strong" tone="success">
+                AOV Booster Sayesinde Kazanılan Ekstra Gelir
+              </s-text>
+            </s-stack>
+            <s-text
+              type="heading-lg"
+              style={{ fontSize: "2.5rem", fontWeight: "bold" }}
+            >
+              {formattedRoi}
+            </s-text>
+            <s-paragraph color="subdued" style={{ textAlign: "center" }}>
+              Bu gelir, doğrudan Yapışkan Buton etkileşimlerinden elde
+              edilmiştir.
+              <br />
+              <s-text type="strong">
+                Toplam etkilenen sipariş: {roiData.ordersInfluenced}
+              </s-text>
+            </s-paragraph>
+          </s-stack>
+        </s-box>
+      </s-section>
+
       {!themeSetup.isFullyConfigured && (
         <s-section>
           <s-banner
