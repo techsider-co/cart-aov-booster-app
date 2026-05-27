@@ -8,7 +8,8 @@ name = "cart-aov-booster"
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 # read_themes — theme embed durumu (app/services/theme-check.server.ts)
-scopes = "read_themes,write_products,write_metaobjects,write_metaobject_definitions"
+# read_orders — ROI tracking webhook (app/routes/webhooks.orders.create.tsx)
+scopes = "read_themes,read_orders,write_products,write_metaobjects,write_metaobject_definitions"
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"
@@ -18,23 +19,8 @@ description = "Tracks products created by the Shopify app template for developme
   [product.metafields.app.demo_info.access]
   admin = "merchant_read_write"
 
-[shop.metafields.aov_booster.shipping_bar_config]
-type = "json"
-name = "Shipping Bar Config"
-description = "Free shipping bar widget configuration for Cart & AOV Booster"
-
-  [shop.metafields.aov_booster.shipping_bar_config.access]
-  admin = "merchant_read"
-  storefront = "public_read"
-
-[shop.metafields.aov_booster.sticky_cart_config]
-type = "json"
-name = "Sticky Cart Config"
-description = "Sticky add-to-cart widget configuration for Cart & AOV Booster"
-
-  [shop.metafields.aov_booster.sticky_cart_config.access]
-  admin = "merchant_read"
-  storefront = "public_read"
+# Widget config lives on AppInstallation (sync-aov-metafields.server.ts).
+# Theme blocks read via app.metafields.aov_booster.* in Liquid.
 
 [metaobjects.app.example]
 name = "Example"
@@ -86,6 +72,12 @@ api_version = "2026-07"
   [[webhooks.subscriptions]]
   uri = "/webhooks/shop/redact"
   compliance_topics = [ "shop/redact" ]
+
+  # Handled by: app/routes/webhooks.orders.create.tsx
+  # ROI tracking - captures orders influenced by AOV Booster widgets
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/orders/create"
+  topics = [ "orders/create" ]
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
