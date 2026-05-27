@@ -11,22 +11,24 @@ import { useActionToast } from "../hooks/use-action-toast";
 import { syncAovMetafields } from "../services/sync-aov-metafields.server";
 import {
   getOrCreateShippingBarWidget,
-  parseBooleanField,
+  parseBooleanFromFormData,
 } from "../services/widget-settings.server";
-import { authenticate } from "../shopify.server";
+import { requireProSubscription } from "../services/require-pro-subscription.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 const CURRENCY_OPTIONS = ["TRY", "USD", "EUR", "GBP"] as const;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireProSubscription(request);
+
   const settings = await getOrCreateShippingBarWidget(session.shop);
 
   return { settings, currencyOptions: CURRENCY_OPTIONS };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireProSubscription(request);
+
   const formData = await request.formData();
 
   const goalAmountRaw = formData.get("goalAmount");
@@ -65,7 +67,7 @@ async function prismaUpdateShippingBar(
     where: { shop },
     create: {
       shop,
-      isActive: parseBooleanField(formData.get("isActive")),
+      isActive: parseBooleanFromFormData(formData, "isActive"),
       goalAmount,
       currency: String(formData.get("currency") ?? "TRY"),
       initialMessage: String(formData.get("initialMessage") ?? ""),
@@ -75,7 +77,7 @@ async function prismaUpdateShippingBar(
       progressColor: String(formData.get("progressColor") ?? "#22c55e"),
     },
     update: {
-      isActive: parseBooleanField(formData.get("isActive")),
+      isActive: parseBooleanFromFormData(formData, "isActive"),
       goalAmount,
       currency: String(formData.get("currency") ?? "TRY"),
       initialMessage: String(formData.get("initialMessage") ?? ""),
@@ -121,8 +123,10 @@ export default function ShippingBarPage() {
         <s-section heading="Durum">
           <s-paragraph color="subdued">
             Kargo motivasyon çubuğunu mağazanızda göstermek için etkinleştirin.
+            Ayrıca tema editöründe{" "}
+            <s-text type="strong">Uygulama eklemeleri → Free Shipping Bar</s-text>{" "}
+            seçeneğinin açık olduğundan emin olun.
           </s-paragraph>
-          <input type="hidden" name="isActive" value="false" />
           <s-switch
             label="Widget aktif"
             name="isActive"

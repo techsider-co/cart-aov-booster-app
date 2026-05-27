@@ -5,30 +5,36 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { AppRouteErrorBoundary } from "../components/AppRouteErrorBoundary";
 import { authenticate } from "../shopify.server";
+import { checkProSubscription } from "../services/shop-subscription.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session, billing } = await authenticate.admin(request);
+  const { isPro } = await checkProSubscription(request, billing, session.shop);
 
   // eslint-disable-next-line no-undef
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  return { apiKey: process.env.SHOPIFY_API_KEY || "", isPro };
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, isPro } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
         <s-link href="/app">Dashboard</s-link>
-        <s-link href="/app/shipping-bar">Shipping Bar</s-link>
-        <s-link href="/app/sticky-cart">Sticky Cart</s-link>
+        {isPro ? (
+          <>
+            <s-link href="/app/shipping-bar">Shipping Bar</s-link>
+            <s-link href="/app/sticky-cart">Sticky Cart</s-link>
+          </>
+        ) : null}
+        <s-link href="/app/billing">Plan</s-link>
       </s-app-nav>
-      <Outlet />
+      <Outlet context={{ isPro }} />
     </AppProvider>
   );
 }
 
-// Shopify needs React Router to catch some thrown responses, so that their headers are included in the response.
 export function ErrorBoundary() {
   return <AppRouteErrorBoundary />;
 }

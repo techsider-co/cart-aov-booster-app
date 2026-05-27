@@ -12,9 +12,9 @@ import { useActionToast } from "../hooks/use-action-toast";
 import { syncAovMetafields } from "../services/sync-aov-metafields.server";
 import {
   getOrCreateStickyCartWidget,
-  parseBooleanField,
+  parseBooleanFromFormData,
 } from "../services/widget-settings.server";
-import { authenticate } from "../shopify.server";
+import { requireProSubscription } from "../services/require-pro-subscription.server";
 
 const POSITION_OPTIONS = [
   { value: "top", label: "Sayfanın üstünde" },
@@ -22,14 +22,16 @@ const POSITION_OPTIONS = [
 ] as const;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireProSubscription(request);
+
   const settings = await getOrCreateStickyCartWidget(session.shop);
 
   return { settings, positionOptions: POSITION_OPTIONS };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireProSubscription(request);
+
   const formData = await request.formData();
 
   const position = String(formData.get("position") ?? "bottom");
@@ -45,18 +47,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       where: { shop: session.shop },
       create: {
         shop: session.shop,
-        isActive: parseBooleanField(formData.get("isActive")),
+        isActive: parseBooleanFromFormData(formData, "isActive"),
         position,
         buttonColor: String(formData.get("buttonColor") ?? "#000000"),
         buttonText: String(formData.get("buttonText") ?? "Sepete Ekle"),
-        hideOnDesktop: parseBooleanField(formData.get("hideOnDesktop")),
+        hideOnDesktop: parseBooleanFromFormData(formData, "hideOnDesktop"),
       },
       update: {
-        isActive: parseBooleanField(formData.get("isActive")),
+        isActive: parseBooleanFromFormData(formData, "isActive"),
         position,
         buttonColor: String(formData.get("buttonColor") ?? "#000000"),
         buttonText: String(formData.get("buttonText") ?? "Sepete Ekle"),
-        hideOnDesktop: parseBooleanField(formData.get("hideOnDesktop")),
+        hideOnDesktop: parseBooleanFromFormData(formData, "hideOnDesktop"),
       },
     });
 
@@ -109,9 +111,10 @@ export default function StickyCartPage() {
         <s-section heading="Durum">
           <s-paragraph color="subdued">
             Yapışkan sepete ekle butonunu ürün sayfalarında göstermek için
-            etkinleştirin.
+            etkinleştirin. Ürün şablonunda{" "}
+            <s-text type="strong">Blok ekle → Sticky Add-to-Cart</s-text> bloğunu
+            eklemeyi unutmayın.
           </s-paragraph>
-          <input type="hidden" name="isActive" value="false" />
           <s-switch
             label="Widget aktif"
             name="isActive"
@@ -163,7 +166,6 @@ export default function StickyCartPage() {
           <s-paragraph color="subdued">
             Butonu yalnızca mobil cihazlarda göstermek için masaüstünde gizleyin.
           </s-paragraph>
-          <input type="hidden" name="hideOnDesktop" value="false" />
           <s-checkbox
             label="Masaüstünde gizle (sadece mobilde göster)"
             name="hideOnDesktop"
