@@ -1,7 +1,77 @@
 {
   "blocks": {
     "free_shipping_bar": {
-      "name": "Free Shipping Bar"
+      "name": "Shipping Bar",
+      "settings": {
+        "header_goal": {
+          "content": "Hedef"
+        },
+        "goal_amount": {
+          "label": "Kargo bedava hedef tutarı",
+          "info": "Ücretsiz kargo için gereken minimum sepet tutarı"
+        },
+        "currency": {
+          "label": "Para birimi"
+        },
+        "header_messages": {
+          "content": "Metinler"
+        },
+        "initial_message": {
+          "label": "Başlangıç metni",
+          "info": "Sepet boşken gösterilir"
+        },
+        "progress_message": {
+          "label": "İlerleme metni",
+          "info": "[amount] kalan tutarı gösterir"
+        },
+        "success_message": {
+          "label": "Başarı metni"
+        },
+        "header_appearance": {
+          "content": "Görünüm"
+        },
+        "bar_height": {
+          "label": "Çubuk yüksekliği"
+        },
+        "font_size": {
+          "label": "Yazı boyutu"
+        },
+        "font_family": {
+          "label": "Yazı tipi",
+          "options": {
+            "inherit": "Tema varsayılanı",
+            "arial": "Arial",
+            "times": "Times New Roman",
+            "georgia": "Georgia",
+            "verdana": "Verdana",
+            "trebuchet": "Trebuchet MS",
+            "roboto": "Roboto",
+            "open_sans": "Open Sans",
+            "lato": "Lato",
+            "montserrat": "Montserrat",
+            "poppins": "Poppins"
+          }
+        },
+        "track_height": {
+          "label": "İlerleme çubuğu kalınlığı"
+        },
+        "header_colors": {
+          "content": "Renkler"
+        },
+        "bar_color": {
+          "label": "Arka plan rengi"
+        },
+        "text_color": {
+          "label": "Metin rengi"
+        },
+        "progress_color": {
+          "label": "İlerleme dolgu rengi"
+        },
+        "track_color": {
+          "label": "İlerleme çubuğu arka planı",
+          "info": "Dolgu çubuğunun arkasındaki alan rengi"
+        }
+      }
     },
     "sticky_cart": {
       "name": "Sticky Add-to-Cart"

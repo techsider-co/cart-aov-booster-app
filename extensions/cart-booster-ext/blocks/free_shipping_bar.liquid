@@ -1,21 +1,88 @@
-{% assign config = app.metafields.aov_booster.shipping_bar_config.value %}
+{% assign is_preview = request.design_mode %}
 
-{% if config and config.isActive %}
-  <div
-    id="aov-shipping-bar"
-    class="aov-shipping-bar"
-    style="--aov-bar-color: {{ config.barColor | default: '#000000' }}; --aov-progress-color: {{ config.progressColor | default: '#22c55e' }};"
-    data-config="{{ config | json | escape }}"
-    role="region"
-    aria-live="polite"
-    aria-label="Ücretsiz kargo durumu"
-  >
-    <p class="aov-shipping-bar__message"></p>
-    <div class="aov-shipping-bar__track" aria-hidden="true">
-      <div class="aov-shipping-bar__progress"></div>
-    </div>
+{% assign goal_amount = block.settings.goal_amount | default: 500 %}
+{% assign currency = block.settings.currency | default: 'TRY' %}
+{% assign initial_message = block.settings.initial_message | default: 'Kargo bedava fırsatını yakala!' %}
+{% assign progress_message = block.settings.progress_message | default: 'Kargoya sadece [amount] kaldı!' %}
+{% assign success_message = block.settings.success_message | default: 'Tebrikler, Kargo Bedava!' %}
+
+{% assign bar_color = block.settings.bar_color | default: '#000000' %}
+{% assign progress_color = block.settings.progress_color | default: '#22c55e' %}
+{% assign text_color = block.settings.text_color | default: '#ffffff' %}
+{% assign track_color = block.settings.track_color | default: '#ffffff40' %}
+
+{% assign bar_height = block.settings.bar_height | default: 56 %}
+{% assign font_size = block.settings.font_size | default: 16 %}
+{% assign track_height = block.settings.track_height | default: 8 %}
+
+{% assign font_family_key = block.settings.font_family | default: 'inherit' %}
+{% assign font_family = 'inherit' %}
+{% case font_family_key %}
+  {% when 'arial' %}
+    {% assign font_family = 'Arial, Helvetica, sans-serif' %}
+  {% when 'times' %}
+    {% assign font_family = '"Times New Roman", Times, serif' %}
+  {% when 'georgia' %}
+    {% assign font_family = 'Georgia, serif' %}
+  {% when 'verdana' %}
+    {% assign font_family = 'Verdana, Geneva, sans-serif' %}
+  {% when 'trebuchet' %}
+    {% assign font_family = '"Trebuchet MS", Helvetica, sans-serif' %}
+  {% when 'roboto' %}
+    {% assign font_family = 'Roboto, Arial, sans-serif' %}
+  {% when 'open_sans' %}
+    {% assign font_family = '"Open Sans", Arial, sans-serif' %}
+  {% when 'lato' %}
+    {% assign font_family = 'Lato, Arial, sans-serif' %}
+  {% when 'montserrat' %}
+    {% assign font_family = 'Montserrat, Arial, sans-serif' %}
+  {% when 'poppins' %}
+    {% assign font_family = 'Poppins, Arial, sans-serif' %}
+{% endcase %}
+
+{% capture config_json %}
+{
+  "isActive": true,
+  "goalAmount": {{ goal_amount }},
+  "currency": "{{ currency }}",
+  "initialMessage": {{ initial_message | json }},
+  "progressMessage": {{ progress_message | json }},
+  "successMessage": {{ success_message | json }},
+  "barColor": "{{ bar_color }}",
+  "progressColor": "{{ progress_color }}",
+  "textColor": "{{ text_color }}",
+  "trackColor": "{{ track_color }}",
+  "barHeight": {{ bar_height }},
+  "fontSize": {{ font_size }},
+  "trackHeight": {{ track_height }},
+  "fontFamily": {{ font_family | json }}
+}
+{% endcapture %}
+
+<div
+  class="aov-shipping-bar"
+  style="
+    --aov-bar-color: {{ bar_color }};
+    --aov-progress-color: {{ progress_color }};
+    --aov-text-color: {{ text_color }};
+    --aov-track-color: {{ track_color }};
+    --aov-bar-min-height: {{ bar_height }}px;
+    --aov-font-size: {{ font_size }}px;
+    --aov-track-height: {{ track_height }}px;
+    --aov-font-family: {{ font_family }};
+  "
+  data-config='{{ config_json | strip_newlines }}'
+  data-preview="{{ is_preview }}"
+  data-active="true"
+  role="region"
+  aria-live="polite"
+  aria-label="Ücretsiz kargo durumu"
+>
+  <p class="aov-shipping-bar__message"></p>
+  <div class="aov-shipping-bar__track" aria-hidden="true">
+    <div class="aov-shipping-bar__progress"></div>
   </div>
-{% endif %}
+</div>
 
 {% schema %}
 {
@@ -23,6 +90,136 @@
   "target": "body",
   "javascript": "aov-free-shipping-bar.js",
   "stylesheet": "aov-free-shipping-bar.css",
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:blocks.free_shipping_bar.settings.header_goal.content"
+    },
+    {
+      "type": "number",
+      "id": "goal_amount",
+      "label": "t:blocks.free_shipping_bar.settings.goal_amount.label",
+      "default": 500,
+      "info": "t:blocks.free_shipping_bar.settings.goal_amount.info"
+    },
+    {
+      "type": "select",
+      "id": "currency",
+      "label": "t:blocks.free_shipping_bar.settings.currency.label",
+      "options": [
+        { "value": "TRY", "label": "TRY (₺)" },
+        { "value": "USD", "label": "USD ($)" },
+        { "value": "EUR", "label": "EUR (€)" },
+        { "value": "GBP", "label": "GBP (£)" }
+      ],
+      "default": "TRY"
+    },
+    {
+      "type": "header",
+      "content": "t:blocks.free_shipping_bar.settings.header_messages.content"
+    },
+    {
+      "type": "text",
+      "id": "initial_message",
+      "label": "t:blocks.free_shipping_bar.settings.initial_message.label",
+      "default": "Kargo bedava fırsatını yakala!",
+      "info": "t:blocks.free_shipping_bar.settings.initial_message.info"
+    },
+    {
+      "type": "text",
+      "id": "progress_message",
+      "label": "t:blocks.free_shipping_bar.settings.progress_message.label",
+      "default": "Kargoya sadece [amount] kaldı!",
+      "info": "t:blocks.free_shipping_bar.settings.progress_message.info"
+    },
+    {
+      "type": "text",
+      "id": "success_message",
+      "label": "t:blocks.free_shipping_bar.settings.success_message.label",
+      "default": "Tebrikler, Kargo Bedava!"
+    },
+    {
+      "type": "header",
+      "content": "t:blocks.free_shipping_bar.settings.header_appearance.content"
+    },
+    {
+      "type": "range",
+      "id": "bar_height",
+      "label": "t:blocks.free_shipping_bar.settings.bar_height.label",
+      "min": 40,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "t:blocks.free_shipping_bar.settings.font_size.label",
+      "min": 12,
+      "max": 28,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "font_family",
+      "label": "t:blocks.free_shipping_bar.settings.font_family.label",
+      "options": [
+        { "value": "inherit", "label": "t:blocks.free_shipping_bar.settings.font_family.options.inherit" },
+        { "value": "arial", "label": "t:blocks.free_shipping_bar.settings.font_family.options.arial" },
+        { "value": "times", "label": "t:blocks.free_shipping_bar.settings.font_family.options.times" },
+        { "value": "georgia", "label": "t:blocks.free_shipping_bar.settings.font_family.options.georgia" },
+        { "value": "verdana", "label": "t:blocks.free_shipping_bar.settings.font_family.options.verdana" },
+        { "value": "trebuchet", "label": "t:blocks.free_shipping_bar.settings.font_family.options.trebuchet" },
+        { "value": "roboto", "label": "t:blocks.free_shipping_bar.settings.font_family.options.roboto" },
+        { "value": "open_sans", "label": "t:blocks.free_shipping_bar.settings.font_family.options.open_sans" },
+        { "value": "lato", "label": "t:blocks.free_shipping_bar.settings.font_family.options.lato" },
+        { "value": "montserrat", "label": "t:blocks.free_shipping_bar.settings.font_family.options.montserrat" },
+        { "value": "poppins", "label": "t:blocks.free_shipping_bar.settings.font_family.options.poppins" }
+      ],
+      "default": "inherit"
+    },
+    {
+      "type": "range",
+      "id": "track_height",
+      "label": "t:blocks.free_shipping_bar.settings.track_height.label",
+      "min": 4,
+      "max": 16,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "t:blocks.free_shipping_bar.settings.header_colors.content"
+    },
+    {
+      "type": "color",
+      "id": "bar_color",
+      "label": "t:blocks.free_shipping_bar.settings.bar_color.label",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "t:blocks.free_shipping_bar.settings.text_color.label",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "progress_color",
+      "label": "t:blocks.free_shipping_bar.settings.progress_color.label",
+      "default": "#22c55e"
+    },
+    {
+      "type": "color",
+      "id": "track_color",
+      "label": "t:blocks.free_shipping_bar.settings.track_color.label",
+      "default": "#ffffff40",
+      "info": "t:blocks.free_shipping_bar.settings.track_color.info"
+    }
+  ]
 }
 {% endschema %}
