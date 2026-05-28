@@ -1,116 +1,164 @@
 /* aov-free-shipping-bar.css */
 
-.aov-shipping-bar-root {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  max-width: 100vw;
-  z-index: 99999;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ════════════════════════════════════════════════════════════════════════════
+   Kök sarmalayıcı
+   ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Bar container ─────────────────────────────────────────────────────────── */
-
-.aov-shipping-bar-root .aov-shipping-bar {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: stretch;
-  width: 100%;
-  max-width: none;
-  min-height: var(--aov-bar-min-height, 56px);
-  margin: 0;
-  padding: 0.75rem 1.25rem;
-  box-sizing: border-box;
-
-  /* Solid background colour – always set; image overlays on top */
-  background-color: var(--aov-bar-color, #000000);
-  color: var(--aov-text-color, #ffffff);
-  font-family: var(--aov-font-family, inherit);
-  font-size: var(--aov-font-size, 16px);
-}
-
-/*
- * Background image layer.
- * Using a pseudo-element keeps the image separate from the text/track stacking
- * context and allows independent opacity control without touching child nodes.
- *
- * --aov-bg-image is set to url('...') or "none" by the liquid template / JS.
- */
-.aov-shipping-bar-root .aov-shipping-bar.aov-shipping-bar--has-image {
-  position: relative;
-  isolation: isolate; /* new stacking context so z-index works inside */
-}
-
-.aov-shipping-bar-root .aov-shipping-bar.aov-shipping-bar--has-image::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: var(--aov-bg-image, none);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  /* Subtle darkening overlay so text stays readable on any photo */
-  background-blend-mode: multiply;
-  /* Let the bar colour act as the tint/overlay colour */
-  background-color: var(--aov-bar-color, rgba(0, 0, 0, 0.45));
-  opacity: 0.92;
-}
-
-/* ── Text ──────────────────────────────────────────────────────────────────── */
-
-.aov-shipping-bar__message {
-  margin: 0 0 0.5rem;
-  padding: 0;
-  font-size: inherit;
-  font-family: inherit;
-  font-weight: 600;
-  line-height: 1.4;
-  text-align: center;
-  color: var(--aov-text-color, #ffffff);
-  position: relative; /* ensure it's above the ::before pseudo-element */
-  z-index: 1;
-}
-
-/* ── Progress track ────────────────────────────────────────────────────────── */
-
-.aov-shipping-bar__track {
-  display: block;
-  width: 100%;
-  max-width: 72rem;
-  height: var(--aov-track-height, 8px);
-  margin: 0 auto;
-  border-radius: 9999px;
-  background-color: var(--aov-track-color, rgba(255, 255, 255, 0.25));
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
-.aov-shipping-bar__progress {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  border-radius: inherit;
-  background-color: var(--aov-progress-color, #22c55e);
-  transform: scaleX(var(--aov-progress-scale, 0));
-  transform-origin: left center;
-  transition: transform 0.35s ease;
-  will-change: transform;
-}
-
-/* ── Page offset helpers ───────────────────────────────────────────────────── */
-
-html.aov-has-shipping-bar {
-  scroll-padding-top: var(--aov-shipping-bar-offset, 0px);
-}
-
-html.aov-has-shipping-bar body {
-  padding-top: var(--aov-shipping-bar-offset, 0px);
-}
+   .aov-shipping-bar-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 99999;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     Bar kapsayıcısı
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  .aov-shipping-bar-root .aov-shipping-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    max-width: none;
+    min-height: var(--aov-bar-min-height, 56px);
+    margin: 0;
+    padding: 0.75rem 1.25rem;
+    box-sizing: border-box;
+  
+    /* Arka plan rengi her zaman uygulanır; görsel varsa ::before üstüne gelir */
+    background-color: var(--aov-bar-color, #000000);
+    color: var(--aov-text-color, #ffffff);
+    font-family: var(--aov-font-family, inherit);
+    font-size: var(--aov-font-size, 16px);
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     Arka plan görseli (pseudo-element katmanı)
+  
+     ::before kullanmanın avantajları:
+       • Görsel ve metin/track bağımsız yığın bağlamlarında kalır.
+       • opacity sadece görseli etkiler; metin okunabilirliği korunur.
+       • --aov-bar-color tint/overlay rengi olarak çalışır.
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  .aov-shipping-bar-root .aov-shipping-bar.aov-shipping-bar--has-image {
+    position: relative;
+    isolation: isolate; /* yeni yığın bağlamı; z-index dahili */
+  }
+  
+  .aov-shipping-bar-root .aov-shipping-bar.aov-shipping-bar--has-image::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;              /* metin ve track'in altında */
+  
+    background-image: var(--aov-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  
+    /*
+     * --aov-bar-color, görselin üzerine renk tonu olarak uygulanır.
+     * background-blend-mode: multiply → koyu renklerde görsel karanlıklaşır,
+     * açık renklerde aydınlanır. Metin okunabilirliği için barColor'u
+     * yarı saydam koyu bir değere (ör. rgba(0,0,0,0.5)) ayarlamak yeterlidir.
+     */
+    background-color: var(--aov-bar-color, rgba(0, 0, 0, 0.45));
+    background-blend-mode: multiply;
+  
+    opacity: 0.9;
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     Mesaj metni
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  .aov-shipping-bar__message {
+    margin: 0 0 0.5rem;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--aov-text-color, #ffffff);
+  
+    /* Görsel arka plan varken pseudo-element'in üzerinde kalması için */
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     İlerleme çubuğu — track (arka plan şeridi)
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  .aov-shipping-bar__track {
+    display: block;
+    width: 100%;
+    max-width: 72rem;
+    height: var(--aov-track-height, 8px);
+    margin: 0 auto;
+    border-radius: 9999px;
+    background-color: var(--aov-track-color, rgba(255, 255, 255, 0.25));
+    overflow: hidden;
+    position: relative;
+    z-index: 1; /* ::before'un üstünde */
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     İlerleme çubuğu — dolgu (progress)
+  
+     scaleX(--aov-progress-scale) → 0..1 arasında yatay ölçekleme.
+     transform-origin: left center  → soldan büyür.
+  
+     JS, --aov-progress-scale custom property'sini ve inline transform'u
+     aynı anda günceller; CSS geçiş animasyonunu uygular.
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  .aov-shipping-bar__progress {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    border-radius: inherit;
+    background-color: var(--aov-progress-color, #22c55e);
+  
+    transform: scaleX(var(--aov-progress-scale, 0));
+    transform-origin: left center;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     Sayfa kaydırma ofseti
+  
+     Sabit konumlu bar, sayfanın üst kısmını kapatır.
+     JS, --aov-shipping-bar-offset'i bar yüksekliğine eşitler.
+     Temalar bu değişkeni zaten kullanıyorsa üzerine yazılmaz.
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  html.aov-has-shipping-bar {
+    scroll-padding-top: var(--aov-shipping-bar-offset, 0px);
+  }
+  
+  html.aov-has-shipping-bar body {
+    padding-top: var(--aov-shipping-bar-offset, 0px);
+  }
+  
+  /* ════════════════════════════════════════════════════════════════════════════
+     Erişilebilirlik: animasyonu azalt
+     ════════════════════════════════════════════════════════════════════════════ */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .aov-shipping-bar__progress {
+      transition: none;
+    }
+  }

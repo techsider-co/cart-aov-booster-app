@@ -1,13 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// schema.prisma
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = "file:dev.sqlite"
@@ -34,23 +30,24 @@ model Session {
 }
 
 model ShippingBarWidget {
-  id              String  @id @default(uuid())
-  shop            String  @unique
-  isActive        Boolean @default(false)
-  goalAmount      Int     @default(500)
-  currency        String  @default("TRY")
-  initialMessage  String  @default("Kargo bedava fırsatını yakala!")
-  progressMessage String  @default("Kargoya sadece [amount] kaldı!")
-  successMessage  String  @default("Tebrikler, Kargo Bedava!")
-  barColor        String  @default("#000000")
-  progressColor   String  @default("#22c55e")
-  textColor       String  @default("#ffffff")
-  trackColor      String  @default("#ffffff40")
-  barHeight       Int     @default(56)
-  fontSize        Int     @default(16)
-  fontFamily          String  @default("inherit")
-  trackHeight         Int     @default(8)
-  backgroundImageUrl  String  @default("")
+  id                 String  @id @default(uuid())
+  shop               String  @unique
+  isActive           Boolean @default(false)
+  goalAmount         Int     @default(500)
+  currency           String  @default("TRY")
+  initialMessage     String  @default("Kargo bedava fırsatını yakala!")
+  progressMessage    String  @default("Kargoya sadece [amount] kaldı!")
+  successMessage     String  @default("Tebrikler, Kargo Bedava!")
+  barColor           String  @default("#000000")
+  progressColor      String  @default("#22c55e")
+  textColor          String  @default("#ffffff")
+  trackColor         String  @default("#ffffff40")
+  barHeight          Int     @default(56)
+  fontSize           Int     @default(16)
+  fontFamily         String  @default("inherit")
+  trackHeight        Int     @default(8)
+  /// Arka plan görseli URL'si. Boş string = düz renk kullan.
+  backgroundImageUrl String  @default("")
 }
 
 model StickyCartWidget {
@@ -63,7 +60,7 @@ model StickyCartWidget {
   hideOnDesktop Boolean @default(false)
 }
 
-/// Dev-bypass Pro subscription (shop-scoped; survives embedded iframe cookie limits)
+/// Dev-bypass Pro subscription (shop-scoped)
 model ShopProSubscription {
   shop      String   @id
   plan      String
@@ -71,7 +68,7 @@ model ShopProSubscription {
   updatedAt DateTime @updatedAt
 }
 
-/// ROI Analytics - tracks revenue influenced by AOV Booster widgets
+/// ROI Analytics - AOV Booster widget'larından etkilenen gelir
 model ShopAnalytics {
   id               String   @id @default(uuid())
   shop             String   @unique
@@ -81,7 +78,7 @@ model ShopAnalytics {
   updatedAt        DateTime @updatedAt
 }
 
-/// Idempotent record of orders already counted toward ROI (webhook + Admin sync)
+/// ROI sayımında çifte kayıtı önlemek için (webhook + Admin sync)
 model InfluencedOrder {
   shop      String
   orderId   String

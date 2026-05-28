@@ -1,106 +1,100 @@
 {% assign config = app.metafields.aov_booster.shipping_bar_config.value %}
 {% assign is_preview = request.design_mode %}
+
 {% assign is_active = false %}
 {% if config.isActive == true %}
   {% assign is_active = true %}
 {% endif %}
 
 {% if is_active or is_preview %}
-  {% assign goal_amount = config.goalAmount | default: 500 %}
-  {% assign currency = config.currency | default: 'TRY' %}
-  {% assign initial_message = config.initialMessage | default: 'Kargo bedava fırsatını yakala!' %}
-  {% assign progress_message = config.progressMessage | default: 'Kargoya sadece [amount] kaldı!' %}
-  {% assign success_message = config.successMessage | default: 'Tebrikler, Kargo Bedava!' %}
-  {% assign bar_color = config.barColor | default: '#000000' %}
-  {% assign progress_color = config.progressColor | default: '#22c55e' %}
-  {% assign text_color = config.textColor | default: '#ffffff' %}
-  {% assign track_color = config.trackColor | default: '#ffffff40' %}
-  {% assign bar_height = config.barHeight | default: 56 %}
-  {% assign font_size = config.fontSize | default: 16 %}
-  {% assign track_height = config.trackHeight | default: 8 %}
-  {% assign background_image_url = config.backgroundImageUrl | default: '' | strip %}
 
-  {% assign font_family_key = config.fontFamily | default: 'inherit' %}
-  {% assign font_family = 'inherit' %}
-  {% case font_family_key %}
-    {% when 'arial' %}
-      {% assign font_family = 'Arial, Helvetica, sans-serif' %}
-    {% when 'times' %}
-      {% assign font_family = '"Times New Roman", Times, serif' %}
-    {% when 'georgia' %}
-      {% assign font_family = 'Georgia, serif' %}
-    {% when 'verdana' %}
-      {% assign font_family = 'Verdana, Geneva, sans-serif' %}
-    {% when 'trebuchet' %}
-      {% assign font_family = '"Trebuchet MS", Helvetica, sans-serif' %}
-    {% when 'roboto' %}
-      {% assign font_family = 'Roboto, Arial, sans-serif' %}
-    {% when 'open_sans' %}
-      {% assign font_family = '"Open Sans", Arial, sans-serif' %}
-    {% when 'lato' %}
-      {% assign font_family = 'Lato, Arial, sans-serif' %}
-    {% when 'montserrat' %}
-      {% assign font_family = 'Montserrat, Arial, sans-serif' %}
-    {% when 'poppins' %}
-      {% assign font_family = 'Poppins, Arial, sans-serif' %}
-  {% endcase %}
+  {%- assign goal_amount      = config.goalAmount      | default: 500 -%}
+  {%- assign currency         = config.currency        | default: 'TRY' -%}
+  {%- assign initial_message  = config.initialMessage  | default: 'Kargo bedava fırsatını yakala!' -%}
+  {%- assign progress_message = config.progressMessage | default: 'Kargoya sadece [amount] kaldı!' -%}
+  {%- assign success_message  = config.successMessage  | default: 'Tebrikler, Kargo Bedava!' -%}
+  {%- assign bar_color        = config.barColor        | default: '#000000' -%}
+  {%- assign progress_color   = config.progressColor   | default: '#22c55e' -%}
+  {%- assign text_color       = config.textColor       | default: '#ffffff' -%}
+  {%- assign track_color      = config.trackColor      | default: '#ffffff40' -%}
+  {%- assign bar_height       = config.barHeight       | default: 56 -%}
+  {%- assign font_size        = config.fontSize        | default: 16 -%}
+  {%- assign track_height     = config.trackHeight     | default: 8 -%}
+  {%- assign bg_image_raw     = config.backgroundImageUrl | default: '' | strip -%}
 
-  {% assign has_background_image = false %}
-  {% if background_image_url != '' %}
-    {% assign has_background_image = true %}
-  {% endif %}
+  {%- comment -%}Font family mapping{%- endcomment -%}
+  {%- assign font_family_key = config.fontFamily | default: 'inherit' -%}
+  {%- assign font_family = 'inherit' -%}
+  {%- case font_family_key -%}
+    {%- when 'arial'      -%}{%- assign font_family = 'Arial, Helvetica, sans-serif' -%}
+    {%- when 'times'      -%}{%- assign font_family = '"Times New Roman", Times, serif' -%}
+    {%- when 'georgia'    -%}{%- assign font_family = 'Georgia, serif' -%}
+    {%- when 'verdana'    -%}{%- assign font_family = 'Verdana, Geneva, sans-serif' -%}
+    {%- when 'trebuchet'  -%}{%- assign font_family = '"Trebuchet MS", Helvetica, sans-serif' -%}
+    {%- when 'roboto'     -%}{%- assign font_family = 'Roboto, Arial, sans-serif' -%}
+    {%- when 'open_sans'  -%}{%- assign font_family = '"Open Sans", Arial, sans-serif' -%}
+    {%- when 'lato'       -%}{%- assign font_family = 'Lato, Arial, sans-serif' -%}
+    {%- when 'montserrat' -%}{%- assign font_family = 'Montserrat, Arial, sans-serif' -%}
+    {%- when 'poppins'    -%}{%- assign font_family = 'Poppins, Arial, sans-serif' -%}
+  {%- endcase -%}
 
-  {% capture config_json %}
-  {
-    "isActive": {% if is_active %}true{% else %}false{% endif %},
-    "goalAmount": {{ goal_amount }},
-    "currency": {{ currency | json }},
-    "initialMessage": {{ initial_message | json }},
-    "progressMessage": {{ progress_message | json }},
-    "successMessage": {{ success_message | json }},
-    "barColor": {{ bar_color | json }},
-    "progressColor": {{ progress_color | json }},
-    "textColor": {{ text_color | json }},
-    "trackColor": {{ track_color | json }},
-    "barHeight": {{ bar_height }},
-    "fontSize": {{ font_size }},
-    "trackHeight": {{ track_height }},
-    "fontFamily": {{ font_family | json }},
-    "fontFamilyKey": {{ font_family_key | json }},
-    "backgroundImageUrl": {{ background_image_url | json }}
-  }
-  {% endcapture %}
+  {%- comment -%}
+    Tek satır JSON — capture+strip_newlines yerine doğrudan inşa.
+    | json her değeri güvenle escape eder. Sayılar doğrudan yerleştirilir.
+    Attribute delimiter: çift tırnak → JSON çift tırnaklarla çakışmaz
+    çünkü | json bunları \" yapar, HTML parser &quot;'e çevirir,
+    getAttribute() &quot; → " döndürür → JSON.parse temiz çalışır.
+  {%- endcomment -%}
+  {%- capture data_config -%}
+    {
+      "isActive": {% if is_active %}true{% else %}false{% endif %},
+      "goalAmount": {{ goal_amount | plus: 0 }},
+      "currency": {{ currency | json }},
+      "initialMessage": {{ initial_message | json }},
+      "progressMessage": {{ progress_message | json }},
+      "successMessage": {{ success_message | json }},
+      "barColor": {{ bar_color | json }},
+      "progressColor": {{ progress_color | json }},
+      "textColor": {{ text_color | json }},
+      "trackColor": {{ track_color | json }},
+      "barHeight": {{ bar_height | plus: 0 }},
+      "fontSize": {{ font_size | plus: 0 }},
+      "trackHeight": {{ track_height | plus: 0 }},
+      "fontFamily": {{ font_family | json }},
+      "backgroundImageUrl": {{ bg_image_raw | json }}
+    }
+  {%- endcapture -%}
+
+  {%- assign has_bg_image = false -%}
+  {%- if bg_image_raw != '' -%}{%- assign has_bg_image = true -%}{%- endif -%}
 
   <div
-    class="aov-shipping-bar{% if has_background_image %} aov-shipping-bar--has-image{% endif %}"
+    class="aov-shipping-bar{% if has_bg_image %} aov-shipping-bar--has-image{% endif %}"
     style="
       --aov-bar-color: {{ bar_color }};
       --aov-progress-color: {{ progress_color }};
       --aov-text-color: {{ text_color }};
       --aov-track-color: {{ track_color }};
-      --aov-bar-min-height: {{ bar_height }}px;
-      --aov-font-size: {{ font_size }}px;
-      --aov-track-height: {{ track_height }}px;
+      --aov-bar-min-height: {{ bar_height | plus: 0 }}px;
+      --aov-font-size: {{ font_size | plus: 0 }}px;
+      --aov-track-height: {{ track_height | plus: 0 }}px;
       --aov-font-family: {{ font_family }};
       --aov-progress-scale: 0;
-      {% if has_background_image %}
-      --aov-bg-image: url({{ background_image_url | json }});
-      {% else %}
-      --aov-bg-image: none;
-      {% endif %}
+      {% if has_bg_image %}--aov-bg-image: url({{ bg_image_raw | json }});{% else %}--aov-bg-image: none;{% endif %}
     "
-    data-config='{{ config_json | strip_newlines }}'
+    data-config="{{ data_config | strip_newlines | escape }}"
     data-preview="{{ is_preview }}"
     data-active="{{ is_active }}"
     role="region"
     aria-live="polite"
     aria-label="Ücretsiz kargo durumu"
   >
-    <p class="aov-shipping-bar__message"></p>
+    <p class="aov-shipping-bar__message" aria-atomic="true"></p>
     <div class="aov-shipping-bar__track" aria-hidden="true">
       <div class="aov-shipping-bar__progress"></div>
     </div>
   </div>
+
 {% endif %}
 
 {% schema %}
