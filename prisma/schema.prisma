@@ -73,3 +73,14 @@ model ShopAnalytics {
   currency         String   @default("TRY")
   updatedAt        DateTime @updatedAt
 }
+
+/// Idempotent record of orders already counted toward ROI (webhook + Admin sync)
+model InfluencedOrder {
+  shop      String
+  orderId   String
+  amount    Float
+  currency  String
+  createdAt DateTime @default(now())
+
+  @@id([shop, orderId])
+}

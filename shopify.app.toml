@@ -73,11 +73,12 @@ api_version = "2026-07"
   uri = "/webhooks/shop/redact"
   compliance_topics = [ "shop/redact" ]
 
-  # Handled by: app/routes/webhooks.orders.create.tsx
-  # ROI tracking - captures orders influenced by AOV Booster widgets
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/create"
-  topics = [ "orders/create" ]
+  # ROI: orders/create requires Protected Customer Data approval in Partner Dashboard.
+  # Dev uses Admin API sync on dashboard load (app/services/roi-analytics.server.ts).
+  # After approval, uncomment to enable real-time webhooks:
+  # [[webhooks.subscriptions]]
+  # uri = "/webhooks/orders/create"
+  # topics = [ "orders/create" ]
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
