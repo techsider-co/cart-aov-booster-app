@@ -1,3 +1,5 @@
+// aov-free-shipping-bar.js
+
 (function () {
   var root = prepareShippingBarRoot();
   if (!root) return;
@@ -40,7 +42,19 @@
       ['--aov-track-height', c.trackHeight + 'px'],
       ['--aov-font-family', c.fontFamily],
     ];
-    for (var i = 0; i < vars.length; i++) r.style.setProperty(vars[i][0], vars[i][1]);
+    for (var i = 0; i < vars.length; i++) {
+      if (vars[i][1] != null) r.style.setProperty(vars[i][0], vars[i][1]);
+    }
+
+    // Apply background image if provided
+    var bgUrl = c.backgroundImageUrl;
+    if (bgUrl && typeof bgUrl === 'string' && bgUrl.trim() !== '') {
+      r.style.setProperty('--aov-bg-image', "url('" + bgUrl.trim() + "')");
+      r.classList.add('aov-shipping-bar--has-image');
+    } else {
+      r.style.setProperty('--aov-bg-image', 'none');
+      r.classList.remove('aov-shipping-bar--has-image');
+    }
   }
 
   function initShippingBar(root) {
@@ -61,6 +75,11 @@
     config.fontSize = Number(config.fontSize) || 16;
     config.trackHeight = Number(config.trackHeight) || 8;
     config.fontFamily = config.fontFamily || 'inherit';
+    config.backgroundImageUrl = config.backgroundImageUrl || '';
+
+    // goalAmount is stored as a whole-unit value (e.g. 500 = 500 TL).
+    // The Shopify cart API returns prices in cents (sub-units), so we convert.
+    var goalCents = Math.round(config.goalAmount * 100);
 
     applyThemeStyles(root, config);
 
@@ -72,15 +91,26 @@
 
     root.style.display = '';
 
-    var messageEl = root.querySelector('.aov-shipping-bar__message');
-    var progressEl = root.querySelector('.aov-shipping-bar__progress');
-    var goalCents = Math.round(config.goalAmount * 100);
     var mountEl = document.getElementById('aov-shipping-bar-root');
+
+    // Guard: nothing to do if no goal is set
+    if (!goalCents) return;
+
+    // ── Debounce / inflight state ──────────────────────────────────────────
     var refreshTimer = null;
     var cartFetchInflight = false;
     var cartFetchQueued = false;
 
-    if (!goalCents || !messageEl || !progressEl) return;
+    // ── DOM helpers ────────────────────────────────────────────────────────
+
+    function getElements() {
+      return {
+        messageEl: root.querySelector('.aov-shipping-bar__message'),
+        progressEl: root.querySelector('.aov-shipping-bar__progress'),
+      };
+    }
+
+    // ── Page-offset bookkeeping ────────────────────────────────────────────
 
     function clearPageOffset() {
       document.documentElement.classList.remove('aov-has-shipping-bar');
@@ -105,9 +135,26 @@
       new ResizeObserver(syncPageOffset).observe(mountEl);
     }
 
+    // ── Cart helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Returns the cart total in cents.
+     *
+     * Shopify exposes two price fields on /cart.js:
+     *   • items_subtotal_price  – subtotal before shipping/discounts on the order
+     *   • total_price           – grand total
+     *
+     * For a "free shipping" progress bar we want the subtotal so that
+     * order-level discounts don't falsely bring the bar back down.
+     * Fall back to total_price when subtotal is unavailable.
+     */
     function cartTotalCents(cart) {
       if (!cart) return 0;
-      return Number(cart.items_subtotal_price != null ? cart.items_subtotal_price : cart.total_price) || 0;
+      var raw =
+        cart.items_subtotal_price != null
+          ? cart.items_subtotal_price
+          : cart.total_price;
+      return Math.max(0, Number(raw) || 0);
     }
 
     function formatMoney(cents) {
@@ -123,59 +170,79 @@
       return val + ' ' + cur;
     }
 
-    function replaceAmount(template, amount) {
-      return String(template || '').replace(/\[amount\]/g, amount);
+    // ── Render ─────────────────────────────────────────────────────────────
+
+    function setProgressScale(percent) {
+      var els = getElements();
+      if (!els.progressEl) return;
+      var scale = Math.min(1, Math.max(0, percent / 100));
+      var scaleStr = String(scale);
+      els.progressEl.style.setProperty('--aov-progress-scale', scaleStr);
+      els.progressEl.style.transform = 'scaleX(' + scaleStr + ')';
+      root.style.setProperty('--aov-progress-scale', scaleStr);
     }
 
-    function renderBar(totalPrice) {
-      var total = Number(totalPrice) || 0;
-      var progressTotal = total;
-      if (isPreview && total === 0) progressTotal = Math.round(goalCents / 2);
+    /**
+     * Renders the bar for a given cart total (in cents).
+     *
+     * Progress formula: totalCents / goalCents × 100
+     * This is the canonical, correct calculation. goalCents is derived from
+     * config.goalAmount (whole units) × 100, matching Shopify's cent-based prices.
+     */
+    function renderBar(totalCents) {
+      var total = Math.max(0, Number(totalCents) || 0);
 
-      var percent = Math.min(100, Math.round((progressTotal / goalCents) * 100));
-      var nextMessage = '';
-      var nextWidth = '0%';
+      // In preview mode with an empty cart, show 50 % so the bar is visible
+      if (isPreview && total === 0) {
+        total = Math.round(goalCents / 2);
+      }
+
+      var percent = Math.min(100, (total / goalCents) * 100);
+      var nextMessage;
+      var els = getElements();
 
       if (total >= goalCents) {
         nextMessage = config.successMessage;
-        nextWidth = '100%';
+        percent = 100;
       } else if (total <= 0) {
-        if (isPreview) {
-          nextMessage = replaceAmount(config.progressMessage, formatMoney(goalCents));
-          nextWidth = percent + '%';
-        } else {
-          nextMessage = config.initialMessage;
-          nextWidth = '0%';
-        }
+        nextMessage = config.initialMessage;
+        percent = 0;
       } else {
-        nextMessage = replaceAmount(config.progressMessage, formatMoney(goalCents - total));
-        nextWidth = percent + '%';
+        var remainingCents = goalCents - total;
+        nextMessage = String(config.progressMessage).replace(
+          /\[amount\]/g,
+          formatMoney(remainingCents)
+        );
       }
 
-      messageEl.textContent = nextMessage;
-      progressEl.style.width = nextWidth;
+      setProgressScale(percent);
+      if (els.messageEl) els.messageEl.textContent = nextMessage;
       syncPageOffset();
     }
 
+    // ── Cart fetching ──────────────────────────────────────────────────────
+
     function refreshCart() {
-      if (isPreview) {
-        renderBar(0);
-        return;
-      }
       if (cartFetchInflight) {
         cartFetchQueued = true;
         return;
       }
       cartFetchInflight = true;
-      fetch('/cart.js', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' })
+      fetch('/cart.js', {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
         .then(function (res) {
-          if (!res.ok) throw new Error('cart');
+          if (!res.ok) throw new Error('cart fetch failed: ' + res.status);
           return res.json();
         })
         .then(function (cart) {
           renderBar(cartTotalCents(cart));
         })
-        .catch(function () {})
+        .catch(function () {
+          // Silently ignore network errors; next poll will retry
+        })
         .finally(function () {
           cartFetchInflight = false;
           if (cartFetchQueued) {
@@ -185,28 +252,52 @@
         });
     }
 
+    /**
+     * Schedules a cart refresh.
+     *
+     * FIX: The original code always entered the `typeof ms === 'number'` branch
+     * because a numeric argument was always passed, meaning the debounce timer
+     * was never used — every call fired a fresh setTimeout immediately instead
+     * of coalescing rapid calls.
+     *
+     * New behaviour:
+     *   scheduleRefresh()        → debounced (300 ms), coalesces rapid calls
+     *   scheduleRefresh(ms)      → one-shot delay of exactly `ms` ms
+     */
     function scheduleRefresh(ms) {
-      if (isPreview) {
-        renderBar(0);
+      if (ms === undefined || ms === null) {
+        // Debounced path — coalesce rapid calls into one
+        if (refreshTimer) window.clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(function () {
+          refreshTimer = null;
+          refreshCart();
+        }, 300);
         return;
       }
-      if (typeof ms === 'number') {
-        window.setTimeout(refreshCart, ms);
-        return;
+      // One-shot path — fire after the specified delay
+      window.setTimeout(refreshCart, ms);
+    }
+
+    // ── Event helpers ──────────────────────────────────────────────────────
+
+    function onCartPayload(cart) {
+      if (
+        cart &&
+        (cart.total_price != null || cart.items_subtotal_price != null)
+      ) {
+        renderBar(cartTotalCents(cart));
+        return true;
       }
-      if (refreshTimer) window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(function () {
-        refreshTimer = null;
-        refreshCart();
-      }, 350);
+      return false;
     }
 
     function onCartEvent(event) {
-      if (event && event.detail && event.detail.cart) {
-        renderBar(cartTotalCents(event.detail.cart));
-        return;
+      if (event && event.detail) {
+        if (onCartPayload(event.detail.cart)) return;
+        if (onCartPayload(event.detail)) return;
       }
-      scheduleRefresh(200);
+      // No usable payload — debounce a full cart refresh
+      scheduleRefresh();
     }
 
     function isCartActionUrl(url) {
@@ -220,57 +311,97 @@
       return /\/cart\/(add|change|update|clear)(\.js)?$/i.test(path);
     }
 
+    // ── Fetch monkey-patch ─────────────────────────────────────────────────
+
     function patchFetch() {
       if (!window.fetch || window.fetch.__aovCartPatched) return;
       var nativeFetch = window.fetch.bind(window);
       window.fetch = function (input, init) {
-        var url = typeof input === 'string' ? input : input && input.url ? input.url : '';
+        var url =
+          typeof input === 'string'
+            ? input
+            : input && input.url
+              ? input.url
+              : '';
         var watch = isCartActionUrl(url);
         return nativeFetch(input, init).then(function (res) {
-          if (watch && res.ok) scheduleRefresh(250);
+          if (watch && res.ok) {
+            res
+              .clone()
+              .json()
+              .then(function (data) {
+                if (!onCartPayload(data)) scheduleRefresh(200);
+              })
+              .catch(function () {
+                scheduleRefresh(200);
+              });
+          }
           return res;
         });
       };
       window.fetch.__aovCartPatched = true;
     }
 
-    if (!isPreview) {
-      patchFetch();
-      var events = ['cart:change', 'cart:updated', 'cart:refresh', 'product:added-to-cart'];
-      for (var i = 0; i < events.length; i++) document.addEventListener(events[i], onCartEvent);
+    patchFetch();
 
-      document.addEventListener(
-        'submit',
-        function (e) {
-          var form = e.target;
-          if (!(form instanceof HTMLFormElement)) return;
-          var action = (form.getAttribute('action') || form.action || '').toLowerCase();
-          if (action.indexOf('/cart/add') !== -1) {
-            scheduleRefresh(400);
-            scheduleRefresh(900);
-          }
-        },
-        true
-      );
+    // ── DOM event listeners ────────────────────────────────────────────────
 
-      document.addEventListener(
-        'click',
-        function (e) {
-          var t = e.target;
-          if (!t || !t.closest) return;
-          if (t.closest('[name="add"], [data-add-to-cart], .add-to-cart, .product-form__submit')) {
-            scheduleRefresh(500);
-            scheduleRefresh(1200);
-          }
-        },
-        true
-      );
-
-      window.setInterval(function () {
-        if (!document.hidden) refreshCart();
-      }, 5000);
+    var cartEvents = [
+      'cart:change',
+      'cart:updated',
+      'cart:refresh',
+      'product:added-to-cart',
+      'theme:cart:change',
+    ];
+    for (var i = 0; i < cartEvents.length; i++) {
+      document.addEventListener(cartEvents[i], onCartEvent);
     }
 
+    // Form submit (add-to-cart forms)
+    document.addEventListener(
+      'submit',
+      function (e) {
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        var action = (
+          form.getAttribute('action') ||
+          form.action ||
+          ''
+        ).toLowerCase();
+        if (action.indexOf('/cart/add') !== -1) {
+          // Two checks: one shortly after and one for slower themes
+          scheduleRefresh(350);
+          scheduleRefresh(800);
+        }
+      },
+      true
+    );
+
+    // Click on add-to-cart buttons
+    document.addEventListener(
+      'click',
+      function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        if (
+          t.closest(
+            '[name="add"], [data-add-to-cart], .add-to-cart, .product-form__submit',
+          )
+        ) {
+          scheduleRefresh(400);
+          scheduleRefresh(1000);
+        }
+      },
+      true
+    );
+
+    // ── Polling fallback (3 s) ─────────────────────────────────────────────
+    // Catches themes that use custom cart implementations not covered above.
+    window.setInterval(function () {
+      if (!document.hidden) refreshCart();
+    }, 3000);
+
+    // ── Initial render ─────────────────────────────────────────────────────
     refreshCart();
     syncPageOffset();
   }
