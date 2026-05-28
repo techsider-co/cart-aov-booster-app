@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "shopify-plugin": {
+      "enabled": true
+    },
+    "cloudflare": {
+      "enabled": true
+    },
+    "neon-postgres": {
+      "enabled": true
+    }
+  }
+}
