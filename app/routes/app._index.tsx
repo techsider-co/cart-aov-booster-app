@@ -1,3 +1,5 @@
+// app/routes/app._index.tsx
+
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useOutletContext } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -108,6 +110,18 @@ export default function Dashboard() {
         </s-box>
       </s-section>
 
+      <s-section>
+        <s-banner tone="info" heading="💡 Tasarım ve Metin Ayarları Hakkında">
+          <s-paragraph>
+            Tüm widget ayarlarınızı (renkler, metinler, hedefler) temanız
+            değişse bile kaybolmaması için{" "}
+            <s-text type="strong">sadece bu panel üzerinden</s-text> yapmalısınız.
+            Shopify Tema Editörünü sadece widget&apos;ı mağazanızda
+            aktifleştirmek (Uygulama eklemeleri şalterini açmak) için kullanın.
+          </s-paragraph>
+        </s-banner>
+      </s-section>
+
       {!themeSetup.isFullyConfigured && (
         <s-section>
           <s-banner
@@ -206,11 +220,10 @@ export default function Dashboard() {
                 {!isPro && <s-badge tone="warning">Pro</s-badge>}
               </s-stack>
               <s-paragraph color="subdued">
-                Sepet tutarına göre tam genişlikte üst kargo çubuğu. Tema
-                editöründe{" "}
+                Renk, metin ve hedef ayarlarını buradan yapın. Tema editöründe
+                yalnızca{" "}
                 <s-text type="strong">Uygulama eklemeleri → Shipping Bar</s-text>{" "}
-                açın (duyuru çubuğu gibi tüm sayfalarda). Uygulamada Widget
-                aktif olmalıdır.
+                şalterini açın.
               </s-paragraph>
               <s-box paddingBlockStart="small">
                 {isPro ? (
