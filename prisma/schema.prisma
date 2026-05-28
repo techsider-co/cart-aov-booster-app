@@ -44,6 +44,13 @@ model ShippingBarWidget {
   successMessage  String  @default("Tebrikler, Kargo Bedava!")
   barColor        String  @default("#000000")
   progressColor   String  @default("#22c55e")
+  textColor       String  @default("#ffffff")
+  trackColor      String  @default("#ffffff40")
+  barHeight       Int     @default(56)
+  fontSize        Int     @default(16)
+  fontFamily          String  @default("inherit")
+  trackHeight         Int     @default(8)
+  backgroundImageUrl  String  @default("")
 }
 
 model StickyCartWidget {

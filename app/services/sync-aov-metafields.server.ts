@@ -1,3 +1,5 @@
+// app/services/sync-aov-metafields.server.ts
+
 import {
   getOrCreateShippingBarWidget,
   getOrCreateStickyCartWidget,
@@ -93,6 +95,13 @@ export async function syncAovMetafields(
     successMessage: shippingBar.successMessage,
     barColor: shippingBar.barColor,
     progressColor: shippingBar.progressColor,
+    textColor: shippingBar.textColor,
+    trackColor: shippingBar.trackColor,
+    barHeight: shippingBar.barHeight,
+    fontSize: shippingBar.fontSize,
+    fontFamily: shippingBar.fontFamily,
+    trackHeight: shippingBar.trackHeight,
+    backgroundImageUrl: shippingBar.backgroundImageUrl,
   };
 
   const stickyCartConfig = {
