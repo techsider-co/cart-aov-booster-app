@@ -1,3 +1,5 @@
+// app/services/theme-check.server.ts
+
 interface AdminGraphQLClient {
   graphql: (
     query: string,

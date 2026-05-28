@@ -1,3 +1,5 @@
+// app/services/widget-settings.server.ts
+
 import prisma from "../db.server";
 
 export async function getOrCreateShippingBarWidget(shop: string) {
