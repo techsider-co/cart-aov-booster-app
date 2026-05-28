@@ -154,18 +154,17 @@ function hasEnabledEmbed(
   });
 }
 
-function hasStickyCartSectionBlock(productTemplate: TemplateJson): boolean {
-  for (const section of Object.values(productTemplate.sections ?? {})) {
+function hasEnabledSectionBlock(
+  template: TemplateJson,
+  handle: (typeof CART_BOOSTER_SECTION_BLOCK_HANDLES)[number],
+): boolean {
+  for (const section of Object.values(template.sections ?? {})) {
     for (const block of Object.values(section.blocks ?? {})) {
       const blockType = block?.type ?? "";
       if (!isCartBoosterBlockType(blockType)) {
         continue;
       }
-      if (
-        !CART_BOOSTER_SECTION_BLOCK_HANDLES.some((handle) =>
-          blockTypeMatchesHandle(blockType, handle),
-        )
-      ) {
+      if (!blockTypeMatchesHandle(blockType, handle)) {
         continue;
       }
       if (isBlockEnabled(block.disabled)) {
@@ -175,6 +174,10 @@ function hasStickyCartSectionBlock(productTemplate: TemplateJson): boolean {
   }
 
   return false;
+}
+
+function hasStickyCartSectionBlock(productTemplate: TemplateJson): boolean {
+  return hasEnabledSectionBlock(productTemplate, "sticky_cart");
 }
 
 export type CartBoosterThemeSetupStatus = {
@@ -198,7 +201,6 @@ export async function getCartBoosterThemeSetupStatus(
   const files = await getThemeFiles(graphql, themeId);
   const settingsContent = files.get("config/settings_data.json");
   const productTemplateContent = files.get("templates/product.json");
-
   let shippingBarEmbedEnabled = false;
   if (settingsContent) {
     const settingsData = parseJsonFile<SettingsDataJson>(settingsContent);

@@ -44,7 +44,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     "sticky_cart",
     "product",
   );
-
   await syncInfluencedOrdersFromAdmin(session.shop, admin);
 
   const analytics = await db.shopAnalytics.findUnique({
@@ -123,18 +122,20 @@ export default function Dashboard() {
               </s-paragraph>
               {!themeSetup.shippingBarEmbedEnabled && (
                 <s-paragraph>
-                  <s-text type="strong">1. Free Shipping Bar:</s-text> Tema
-                  editöründe{" "}
-                  <s-text type="strong">Uygulama eklemeleri</s-text> bölümünden
-                  &quot;Free Shipping Bar&quot;ı etkinleştirin.
+                  <s-text type="strong">1. Shipping Bar:</s-text> Sol menüden{" "}
+                  <s-text type="strong">Uygulama eklemeleri</s-text> →
+                  &quot;Shipping Bar&quot;ı açın. Üstbilgiye blok olarak
+                  eklemeyin; tam genişlik için yalnızca uygulama eklemesi
+                  kullanılır.
                 </s-paragraph>
               )}
               {!themeSetup.stickyCartBlockEnabled && (
                 <s-paragraph>
                   <s-text type="strong">2. Sticky Add-to-Cart:</s-text> Ürün
-                  şablonunda bir bölüme{" "}
-                  <s-text type="strong">Sticky Add-to-Cart</s-text> bloğunu
-                  ekleyin.
+                  sayfasında (veya istediğiniz bölümde){" "}
+                  <s-text type="strong">Blok ekle</s-text> → Uygulamalar →
+                  &quot;Sticky Add-to-Cart&quot;. Tema editöründe önizleme için
+                  ürün şablonunu açın.
                 </s-paragraph>
               )}
             </s-stack>
@@ -146,7 +147,7 @@ export default function Dashboard() {
                     target="_blank"
                     variant="primary"
                   >
-                    Kargo çubuğunu etkinleştir
+                    Shipping Bar&apos;ı etkinleştir
                   </s-button>
                 )}
               {!themeSetup.stickyCartBlockEnabled &&
@@ -205,8 +206,11 @@ export default function Dashboard() {
                 {!isPro && <s-badge tone="warning">Pro</s-badge>}
               </s-stack>
               <s-paragraph color="subdued">
-                Sepet tutarına göre dinamik ilerleyen kargo çubuğu. Tema
-                editöründe uygulama eklemesi olarak etkinleştirilir.
+                Sepet tutarına göre tam genişlikte üst kargo çubuğu. Tema
+                editöründe{" "}
+                <s-text type="strong">Uygulama eklemeleri → Shipping Bar</s-text>{" "}
+                açın (duyuru çubuğu gibi tüm sayfalarda). Uygulamada Widget
+                aktif olmalıdır.
               </s-paragraph>
               <s-box paddingBlockStart="small">
                 {isPro ? (
@@ -235,7 +239,10 @@ export default function Dashboard() {
                 {!isPro && <s-badge tone="warning">Pro</s-badge>}
               </s-stack>
               <s-paragraph color="subdued">
-                Ürün sayfasına eklenebilen yapışkan sepete ekle butonu.
+                Ürün sayfasında (veya herhangi bir bölümde) yapışkan sepete ekle
+                çubuğu. Tema editöründe ürün şablonunu açıp{" "}
+                <s-text type="strong">Blok ekle → Sticky Add-to-Cart</s-text>{" "}
+                seçin; kaydedince canlı mağazada görünür.
               </s-paragraph>
               <s-box paddingBlockStart="small">
                 {isPro ? (
