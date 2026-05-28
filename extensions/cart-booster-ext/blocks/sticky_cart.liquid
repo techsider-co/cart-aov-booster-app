@@ -1,18 +1,19 @@
-{% if request.page_type == 'product' %}
-  {% assign config = app.metafields.aov_booster.sticky_cart_config.value %}
+{% assign config = app.metafields.aov_booster.sticky_cart_config.value %}
+{% assign is_preview = request.design_mode %}
 
-  {% if config and config.isActive %}
+{% if request.page_type == 'product' or is_preview %}
+  {% if config.isActive or is_preview %}
     {% assign position_class = 'aov-sticky-cart--bottom' %}
     {% if config.position == 'top' %}
       {% assign position_class = 'aov-sticky-cart--top' %}
     {% endif %}
 
     {% assign mobile_only_class = '' %}
-    {% if config.hideOnDesktop %}
+    {% if config.hideOnDesktop and is_preview == false %}
       {% assign mobile_only_class = 'aov-sticky-cart--mobile-only' %}
     {% endif %}
 
-    {% if config.hideOnDesktop %}
+    {% if config.hideOnDesktop and is_preview == false %}
       <style>
         @media (min-width: 768px) {
           #aov-sticky-cart.aov-sticky-cart--mobile-only {
@@ -22,28 +23,34 @@
       </style>
     {% endif %}
 
+    {% assign display_title = product.title | default: 'Örnek Ürün Adı' %}
+    {% assign display_price = product.price | default: 19900 %}
+
     <div
       id="aov-sticky-cart"
-      class="aov-sticky-cart {{ position_class }} {{ mobile_only_class }}"
+      class="aov-sticky-cart {{ position_class }} {{ mobile_only_class }}{% if is_preview %} aov-sticky-cart--editor-preview{% endif %}"
       style="--aov-btn-color: {{ config.buttonColor | default: '#000000' }};"
-      data-config="{{ config | json | escape }}"
+      data-config="{% if config %}{{ config | json | escape }}{% else %}{}{% endif %}"
+      data-preview="{{ is_preview }}"
       role="complementary"
       aria-label="Yapışkan sepete ekle"
-      aria-hidden="true"
+      aria-hidden="{% if is_preview %}false{% else %}true{% endif %}"
     >
       {% if product.featured_image %}
         <div class="aov-sticky-cart__media">
           {{
             product.featured_image
             | image_url: width: 120
-            | image_tag: alt: product.title, loading: 'lazy', widths: '48, 96, 120'
+            | image_tag: alt: display_title, loading: 'lazy', widths: '48, 96, 120'
           }}
         </div>
+      {% elsif is_preview %}
+        <div class="aov-sticky-cart__media aov-sticky-cart__media--placeholder" aria-hidden="true"></div>
       {% endif %}
 
       <div class="aov-sticky-cart__info">
-        <p class="aov-sticky-cart__title">{{ product.title | escape }}</p>
-        <p class="aov-sticky-cart__price">{{ product.price | money }}</p>
+        <p class="aov-sticky-cart__title">{{ display_title | escape }}</p>
+        <p class="aov-sticky-cart__price">{{ display_price | money }}</p>
       </div>
 
       <button type="button" class="aov-sticky-cart__button">
@@ -57,9 +64,6 @@
 {
   "name": "t:blocks.sticky_cart.name",
   "target": "section",
-  "enabled_on": {
-    "templates": ["product"]
-  },
   "javascript": "aov-sticky-cart.js",
   "stylesheet": "aov-sticky-cart.css",
   "settings": []

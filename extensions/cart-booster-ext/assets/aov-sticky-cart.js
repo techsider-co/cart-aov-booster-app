@@ -2,6 +2,8 @@
   var root = document.getElementById('aov-sticky-cart');
   if (!root) return;
 
+  var isPreview = root.dataset.preview === 'true';
+
   var config = {};
   try {
     config = JSON.parse(root.dataset.config || '{}');
@@ -9,7 +11,12 @@
     return;
   }
 
-  if (!config.isActive) return;
+  config.position = config.position || 'bottom';
+  config.buttonColor = config.buttonColor || '#000000';
+  config.buttonText = config.buttonText || 'Sepete Ekle';
+  config.hideOnDesktop = config.hideOnDesktop === true;
+
+  if (!config.isActive && !isPreview) return;
 
   var stickyButton = root.querySelector('.aov-sticky-cart__button');
   var originalForm = null;
@@ -44,6 +51,13 @@
     root.setAttribute('aria-hidden', visible ? 'false' : 'true');
   }
 
+  function showPreviewBar() {
+    setBarVisible(true);
+    root.style.transform = 'translate3d(0, 0, 0)';
+    root.style.opacity = '1';
+    root.style.pointerEvents = 'auto';
+  }
+
   function syncDisabledState() {
     if (!stickyButton || !originalButton) return;
     stickyButton.disabled = originalButton.disabled;
@@ -65,6 +79,10 @@
   function triggerOriginalAddToCart(event) {
     if (event) {
       event.preventDefault();
+    }
+
+    if (isPreview) {
+      return;
     }
 
     if (!originalButton || originalButton.disabled) {
@@ -117,7 +135,32 @@
     });
   }
 
+  function initPreviewMode() {
+    showPreviewBar();
+
+    if (!stickyButton) {
+      return true;
+    }
+
+    stickyButton.addEventListener('click', triggerOriginalAddToCart);
+
+    var targets = findAddToCartTargets();
+    originalForm = targets.form;
+    originalButton = targets.button;
+
+    if (originalButton) {
+      syncDisabledState();
+      observeOriginalButtonDisabled();
+    }
+
+    return true;
+  }
+
   function init() {
+    if (isPreview) {
+      return initPreviewMode();
+    }
+
     var targets = findAddToCartTargets();
     originalForm = targets.form;
     originalButton = targets.button;
